@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Universal Calculator - Offline Engineering Toolkit</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-input: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --danger: #ef4444;
+            --success: #22c55e;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        }
+
+        html.light {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-input: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left, .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-title p {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .icon-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+        }
+
+        /* Category Bar */
+        .category-container {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 16px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .category-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-scroll {
+            display: inline-flex;
+            gap: 8px;
+        }
+
+        .cat-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 40px;
+        }
+
+        .cat-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Main App Layout */
+        main {
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 1024px) {
+            main {
+                grid-template-columns: 1.6fr 1fr;
+                padding: 24px;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        /* Calculator Workspace */
+        .calc-workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select, textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+            min-height: 44px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .row-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+        }
+
+        /* Result Panel */
+        .result-panel {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .result-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .result-value {
+            font-size: 26px;
+            font-weight: 700;
+            word-break: break-all;
+            color: var(--text-primary);
+        }
+
+        .result-unit {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        /* Keypad Styles */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .key-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key-btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+
+        .key-btn.operator {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .key-btn.action {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* History Panel */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .history-item {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: var(--accent);
+        }
+
+        .history-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+
+        .history-expr {
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-res {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .history-time {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        /* Bottom Nav & Dots */
+        .nav-footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .dots-container {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            overflow-x: auto;
+            max-width: 50vw;
+            scrollbar-width: none;
+        }
+
+        .dots-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            opacity: 0.3;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .dot.active {
+            opacity: 1;
+            background: var(--accent);
+            transform: scale(1.3);
+        }
+
+        /* Matrix Inputs */
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        /* Table Results */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .data-table th, .data-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: center;
+        }
+
+        .data-table th {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .table-container {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-br: var(--shadow);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="logo-icon">Ω</div>
+            <div class="header-title">
+                <h1>Universal Calculator</h1>
+                <p>Offline • Engineering Toolkit</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" id="theme-toggle" title="Toggle Theme">🌓</button>
+            <button class="icon-btn" id="settings-btn" title="Settings & Info">⚙️</button>
+        </div>
+    </header>
+
+    <div class="category-container">
+        <div class="category-scroll" id="category-bar"></div>
+    </div>
+
+    <main id="app-main">
+        <!-- Dynamic active calculator goes here -->
+    </main>
+
+    <div class="nav-footer">
+        <button class="btn btn-secondary" id="prev-cat-btn">← Previous</button>
+        <div class="dots-container" id="dots-container"></div>
+        <button class="btn btn-secondary" id="next-cat-btn">Next →</button>
+    </div>
+
+    <div id="toast">Notification</div>
+
+    <script>
+        // Safe Expression Parser & Tokenizer
+        class SafeParser {
+            static tokenize(expr) {
+                const regex = /\s*([A-Za-z_][A-Za-z0-9_]*|\d+(?:\.\d+)?(?:[eE][-+]?\d+)?|[+\-*/^(),]|\S)\s*/g;
+                const tokens = [];
+                let match;
+                while ((match = regex.exec(expr)) !== null) {
+                    if (match[1].trim() !== '') {
+                        tokens.push(match[1]);
+                    }
+                }
+                return tokens;
+            }
+
+            static parse(expr, variables = {}) {
+                const tokens = this.tokenize(expr);
+                let current = 0;
+
+                function peek() {
+                    return tokens[current];
+                }
+
+                function consume(expected) {
+                    if (tokens[current] === expected) {
+                        current++;
+                    } else {
+                        throw new Error(`Expected '${expected}' at position ${current}`);
+                    }
+                }
+
+                function parseExpression() {
+                    return parseAdditive();
+                }
+
+                function parseAdditive() {
+                    let node = parseMultiplicative();
+                    while (peek() === '+' || peek() === '-') {
+                        const op = peek();
+                        current++;
+                        node = { type: 'Binary', op, left: node, right: parseMultiplicative() };
+                    }
+                    return node;
+                }
+
+                function parseMultiplicative() {
+                    let node = parseExponent();
+                    while (peek() === '*' || peek() === '/') {
+                        const op = peek();
+                        current++;
+                        node = { type: 'Binary', op, left: node, right: parseExponent() };
+                    }
+                    return node;
+                }
+
+                function parseExponent() {
+                    let node = parseUnary();
+                    if (peek() === '^') {
+                        current++;
+                        node = { type: 'Binary', op: '^', left: node, right: parseExponent() };
+                    }
+                    return node;
+                }
+
+                function parseUnary() {
+                    if (peek() === '+') {
+                        current++;
+                        return parseUnary();
+                    }
+                    if (peek() === '-') {
+                        current++;
+                        return { type: 'Unary', op: '-', expr: parseUnary() };
+                    }
+                    return parsePrimary();
+                }
+
+                function parsePrimary() {
+                    const token = peek();
+                    if (token === undefined) {
+                        throw new Error("Unexpected end of expression");
+                    }
+
+                    if (token === '(') {
+                        current++;
+                        const node = parseExpression();
+                        consume(')');
+                        return node;
+                    }
+
+                    if (!isNaN(token)) {
+                        current++;
+                        return { type: 'Literal', value: parseFloat(token) };
+                    }
+
+                    // Identifiers (functions or variables)
+                    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(token)) {
+                        current++;
+                        if (peek() === '(') {
+                            current++; // consume '('
+                            const args = [];
+                            if (peek() !== ')') {
+                                args.push(parseExpression());
+                                while (peek() === ',') {
+                                    current++;
+                                    args.push(parseExpression());
+                                }
+                            }
+                            consume(')');
+                            return { type: 'Call', name: token.toLowerCase(), args };
+                        } else {
+                            return { type: 'Identifier', name: token.toLowerCase() };
+                        }
+                    }
+
+                    throw new Error(`Unexpected token '${token}'`);
+                }
+
+                const ast = parseExpression();
+                if (current < tokens.length) {
+                    throw new Error("Unexpected trailing tokens");
+                }
+                return this.evaluateAST(ast, variables);
+            }
+
+            static evaluateAST(node, vars) {
+                switch (node.type) {
+                    case 'Literal':
+                        return node.value;
+                    case 'Identifier':
+                        const name = node.name;
+                        if (name === 'pi') return Math.PI;
+                        if (name === 'e') return Math.E;
+                        if (name in vars) return vars[name];
+                        throw new Error(`Unknown variable or constant '${name}'`);
+                    case 'Unary':
+                        const val = this.evaluateAST(node.expr, vars);
+                        if (node.op === '-') return -val;
+                        return val;
+                    case 'Binary':
+                        const left = this.evaluateAST(node.left, vars);
+                        const right = this.evaluateAST(node.right, vars);
+                        switch (node.op) {
+                            case '+': return left + right;
+                            case '-': return left - right;
+                            case '*': return left * right;
+                            case '/': 
+                                if (right === 0) throw new Error("Division by zero");
+                                return left / right;
+                            case '^': return Math.pow(left, right);
+                        }
+                        break;
+                    case 'Call':
+                        const args = node.args.map(arg => this.evaluateAST(arg, vars));
+                        const fn = node.name;
+                        switch (fn) {
+                            case 'sqrt':
+                                if (args[0] < 0) throw new Error("Square root of negative number");
+                                return Math.sqrt(args[0]);
+                            case 'sin': return Math.sin(args[0]);
+                            case 'cos': return Math.cos(args[0]);
+                            case 'tan': return Math.tan(args[0]);
+                            case 'asin': return Math.asin(args[0]);
+                            case 'acos': return Math.acos(args[0]);
+                            case 'atan': return Math.atan(args[0]);
+                            case 'log': 
+                                if (args[0] <= 0) throw new Error("Logarithm domain error");
+                                return Math.log10(args[0]);
+                            case 'ln': 
+                                if (args[0] <= 0) throw new Error("Natural log domain error");
+                                return Math.log(args[0]);
+                            case 'abs': return Math.abs(args[0]);
+                            case 'exp': return Math.exp(args[0]);
+                            case 'pow': return Math.pow(args[0], args[1]);
+                            case 'floor': return Math.floor(args[0]);
+                            case 'ceil': return Math.ceil(args[0]);
+                            case 'round': return Math.round(args[0]);
+                            case 'min': return Math.min(...args);
+                            case 'max': return Math.max(...args);
+                            default:
+                                throw new Error(`Unknown function '${fn}'`);
+                        }
+                }
+                throw new Error("Evaluation error");
+            }
+        }
+    </script>
+
+    <script>
+        // App State & History
+        let currentCategoryIndex = 0;
+        let lastResult = 0;
+        let historyData = [];
+
+        try {
+            const saved = localStorage.getItem('univ_calc_history');
+            if (saved) historyData = JSON.parse(saved);
+        } catch (e) {
+            historyData = [];
+        }
+
+        function saveHistory(expr, res) {
+            const now = new Date();
+            const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            historyData.unshift({ expr, res, time: timeStr });
+            if (historyData.length > 30) historyData.pop();
+            try {
+                localStorage.setItem('univ_calc_history', JSON.stringify(historyData));
+            } catch (e) {}
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        function copyToClipboard(text) {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => showToast("Copied to clipboard!"));
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showToast("Copied to clipboard!");
+                }
+            } catch (e) {
+                showToast("Failed to copy");
+            }
+        }
+
+        // Theme Toggle
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        themeToggleBtn.addEventListener('click', () => {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                try { localStorage.setItem('univ_calc_theme', 'light'); } catch (e) {}
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                try { localStorage.setItem('univ_calc_theme', 'dark'); } catch (e) {}
+            }
+        });
+
+        try {
+            const savedTheme = localStorage.getItem('univ_calc_theme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+            }
+        } catch(e) {}
+    </script>
+
+    <script>
+        // Calculator Modules Definition
+        const calculators = [
+            {
+                id: "general",
+                name: "General",
+                icon: "🔢",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">General Calculator <button class="btn-secondary" style="padding:4px 10px; font-size:12px; border-radius:6px;" onclick="genUsePrev()">Use Previous</button></div>
+                            <div class="input-group">
+                                <label>Expression</label>
+                                <input type="text" id="gen-expr" value="sin(pi/2) + sqrt(25) + 5^2" placeholder="e.g. 2*x + 5">
+                            </div>
+                            <div class="input-group">
+                                <label>Variable x (optional)</label>
+                                <input type="number" id="gen-x" value="2" placeholder="Value for x">
+                            </div>
+                            <div class="keypad">
+                                <button class="key-btn operator" onclick="genAppend('sin(')">sin</button>
+                                <button class="key-btn operator" onclick="genAppend('cos(')">cos</button>
+                                <button class="key-btn operator" onclick="genAppend('tan(')">tan</button>
+                                <button class="key-btn action" onclick="genClear()">AC</button>
+                                
+                                <button class="key-btn operator" onclick="genAppend('sqrt(')">√</button>
+                                <button class="key-btn operator" onclick="genAppend('^')">^</button>
+                                <button class="key-btn operator" onclick="genAppend('pi')">π</button>
+                                <button class="key-btn operator" onclick="genAppend('e')">e</button>
+
+                                <button class="key-btn" onclick="genAppend('7')">7</button>
+                                <button class="key-btn" onclick="genAppend('8')">8</button>
+                                <button class="key-btn" onclick="genAppend('9')">9</button>
+                                <button class="key-btn operator" onclick="genAppend('/')">/</button>
+
+                                <button class="key-btn" onclick="genAppend('4')">4</button>
+                                <button class="key-btn" onclick="genAppend('5')">5</button>
+                                <button class="key-btn" onclick="genAppend('6')">6</button>
+                                <button class="key-btn operator" onclick="genAppend('*')">*</button>
+
+                                <button class="key-btn" onclick="genAppend('1')">1</button>
+                                <button class="key-btn" onclick="genAppend('2')">2</button>
+                                <button class="key-btn" onclick="genAppend('3')">3</button>
+                                <button class="key-btn operator" onclick="genAppend('-')">-</button>
+
+                                <button class="key-btn" onclick="genAppend('0')">0</button>
+                                <button class="key-btn" onclick="genAppend('.')">.</button>
+                                <button class="key-btn operator" onclick="genAppend('x')">x</button>
+                                <button class="key-btn operator" onclick="genAppend('+')">+</button>
+
+                                <button class="key-btn operator" onclick="genAppend('(')">(</button>
+                                <button class="key-btn operator" onclick="genAppend(')')">)</button>
+                                <button class="key-btn action" onclick="genBackspace()">⌫</button>
+                                <button class="key-btn" style="background:var(--accent); color:white;" onclick="calculateGeneral()">=</button>
+                            </div>
+                            <div class="result-panel">
+                                <span class="result-label">Result</span>
+                                <div class="result-value" id="gen-result">31</div>
+                                <div class="result-unit" id="gen-unit">Exact numeric evaluation</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('gen-result').textContent)">Copy Result</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateGeneral(); }
+            },
+            {
+                id: "calculus",
+                name: "Calculus",
+                icon: "📈",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Calculus (Derivative & Integral)</div>
+                            <div class="input-group">
+                                <label>Function f(x)</label>
+                                <input type="text" id="calc-f" value="x^3 + 2*x">
+                            </div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Point x / Start</label>
+                                    <input type="number" id="calc-x" value="2">
+                                </div>
+                                <div class="input-group">
+                                    <label>dx / End</label>
+                                    <input type="number" id="calc-dx" value="5">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Intervals (Simpson's Rule, even number)</label>
+                                <input type="number" id="calc-n" value="100">
+                            </div>
+                            <button class="btn" onclick="calculateCalculus()">Compute Calculus</button>
+                            <div class="result-panel">
+                                <span class="result-label">Calculus Results</span>
+                                <div class="result-value" id="calc-res-deriv" style="font-size:20px;">f'(x) ≈ --</div>
+                                <div class="result-value" id="calc-res-integ" style="font-size:20px;">∫ f(x) dx ≈ --</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('calc-res-deriv').textContent + ' | ' + document.getElementById('calc-res-integ').textContent)">Copy Results</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateCalculus(); }
+            },
+            {
+                id: "statistics",
+                name: "Statistics",
+                icon: "📊",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Statistical Analysis</div>
+                            <div class="input-group">
+                                <label>Dataset (comma separated)</label>
+                                <textarea id="stat-data" rows="3">10, 20, 30, 40, 50, 60, 80</textarea>
+                            </div>
+                            <button class="btn" onclick="calculateStatistics()">Calculate Statistics</button>
+                            <div class="result-panel">
+                                <span class="result-label">Summary Statistics</span>
+                                <div id="stat-results" style="font-size:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;">
+                                    <div>n: --</div><div>Sum: --</div>
+                                    <div>Mean: --</div><div>Median: --</div>
+                                    <div>Min: --</div><div>Max: --</div>
+                                    <div>Pop Std Dev: --</div><div>Sample Std Dev: --</div>
+                                </div>
+                                <div class="result-actions" style="margin-top:12px;">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('stat-results').innerText)">Copy Summary</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateStatistics(); }
+            },
+            {
+                id: "geometry",
+                name: "Geometry",
+                icon: "📐",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Geometric Properties</div>
+                            <div class="input-group">
+                                <label>Select Shape</label>
+                                <select id="geo-shape" onchange="updateGeometryUI()">
+                                    <option value="circle">Circle</option>
+                                    <option value="rectangle">Rectangle</option>
+                                    <option value="triangle">Triangle</option>
+                                    <option value="cube">Cube</option>
+                                    <option value="cylinder">Cylinder</option>
+                                    <option value="sphere">Sphere</option>
+                                </select>
+                            </div>
+                            <div id="geo-inputs-container"></div>
+                            <button class="btn" onclick="calculateGeometry()">Calculate Shape</button>
+                            <div class="result-panel">
+                                <span class="result-label">Geometric Output</span>
+                                <div class="result-value" id="geo-res-1" style="font-size:22px;">Area: --</div>
+                                <div class="result-unit" id="geo-res-2">Perimeter / Volume: --</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('geo-res-1').textContent + ', ' + document.getElementById('geo-res-2').textContent)">Copy Result</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { updateGeometryUI(); calculateGeometry(); }
+            }
+        ];
+    </script>
+
+    <script>
+        calculators.push(
+            {
+                id: "trigonometry",
+                name: "Trigonometry",
+                icon: "📉",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Trigonometric Functions</div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Angle Value</label>
+                                    <input type="number" id="trig-val" value="45">
+                                </div>
+                                <div class="input-group">
+                                    <label>Angle Unit</label>
+                                    <select id="trig-mode">
+                                        <option value="deg">Degree</option>
+                                        <option value="rad">Radian</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Inverse Trig Calculation (Value)</label>
+                                <input type="number" id="trig-inv-val" value="0.7071">
+                            </div>
+                            <button class="btn" onclick="calculateTrigonometry()">Calculate Trig</button>
+                            <div class="result-panel">
+                                <span class="result-label">Trigonometric Outputs</span>
+                                <div id="trig-results" style="font-size:14px; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                                    <div>sin: --</div><div>cos: --</div>
+                                    <div>tan: --</div><div>asin: --</div>
+                                    <div>acos: --</div><div>atan: --</div>
+                                </div>
+                                <div class="result-actions" style="margin-top:12px;">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('trig-results').innerText)">Copy Trig Data</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateTrigonometry(); }
+            },
+            {
+                id: "physics",
+                name: "Physics",
+                icon: "⚡",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Physics Equations</div>
+                            <div class="input-group">
+                                <label>Physics Formula Tool</label>
+                                <select id="phys-tool" onchange="updatePhysicsUI()">
+                                    <option value="kinematics_v">Kinematics: v = s / t</option>
+                                    <option value="kinematics_s">Kinematics: s = v * t</option>
+                                    <option value="newton">Newton's Second Law: F = m * a</option>
+                                    <option value="ke">Kinetic Energy: KE = ½ m v²</option>
+                                    <option value="pe">Potential Energy: PE = m g h</option>
+                                    <option value="ohm">Ohm's Law: V = I * R</option>
+                                </select>
+                            </div>
+                            <div id="phys-inputs-container"></div>
+                            <button class="btn" onclick="calculatePhysics()">Calculate Physics</button>
+                            <div class="result-panel">
+                                <span class="result-label">Result</span>
+                                <div class="result-value" id="phys-res">--</div>
+                                <div class="result-unit" id="phys-unit">--</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('phys-res').textContent + ' ' + document.getElementById('phys-unit').textContent)">Copy Result</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { updatePhysicsUI(); calculatePhysics(); }
+            },
+            {
+                id: "materials",
+                name: "Materials",
+                icon: "🧱",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Materials & Engineering Mechanics</div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Force (F)</label>
+                                    <input type="number" id="mat-f" value="50000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Force Unit</label>
+                                    <select id="mat-f-unit">
+                                        <option value="1">N</option>
+                                        <option value="1000">kN</option>
+                                        <option value="1000000">MN</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Area (A)</label>
+                                    <input type="number" id="mat-a" value="0.005">
+                                </div>
+                                <div class="input-group">
+                                    <label>Area Unit</label>
+                                    <select id="mat-a-unit">
+                                        <option value="1">m²</option>
+                                        <option value="0.0001">cm²</option>
+                                        <option value="0.000001">mm²</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Delta L (ΔL)</label>
+                                    <input type="number" id="mat-dl" value="0.001">
+                                </div>
+                                <div class="input-group">
+                                    <label>Initial Length (L)</label>
+                                    <input type="number" id="mat-l0" value="1.0">
+                                </div>
+                            </div>
+                            <button class="btn" onclick="calculateMaterials()">Calculate Mechanics</button>
+                            <div class="result-panel">
+                                <span class="result-label">Stress, Strain & Young's Modulus</span>
+                                <div class="result-value" id="mat-res-stress" style="font-size:20px;">Stress: --</div>
+                                <div class="result-value" id="mat-res-strain" style="font-size:16px;">Strain: --</div>
+                                <div class="result-value" id="mat-res-mod" style="font-size:20px;">Young's Modulus (E): --</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('mat-res-stress').textContent)">Copy Results</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateMaterials(); }
+            },
+            {
+                id: "pendulum",
+                name: "Pendulum",
+                icon: "⏱️",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Simple Pendulum Calculator</div>
+                            <div class="input-group">
+                                <label>Calculation Mode</label>
+                                <select id="pend-mode" onchange="updatePendulumUI()">
+                                    <option value="T">Calculate Period (T) from Length & g</option>
+                                    <option value="L">Calculate Length (L) from Period & g</option>
+                                    <option value="g">Calculate Gravity (g) from Period & Length</option>
+                                </select>
+                            </div>
+                            <div id="pend-inputs-container"></div>
+                            <button class="btn" onclick="calculatePendulum()">Calculate Pendulum</button>
+                            <div class="result-panel">
+                                <span class="result-label">Pendulum Dynamics</span>
+                                <div class="result-value" id="pend-res-primary">--</div>
+                                <div class="result-unit" id="pend-res-secondary">Frequency: -- | RPM: --</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('pend-res-primary').textContent)">Copy Result</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { updatePendulumUI(); calculatePendulum(); }
+            }
+        );
+    </script>
+
+    <script>
+        calculators.push(
+            {
+                id: "finance",
+                name: "Finance",
+                icon: "💰",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Financial & Compound Interest</div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Principal (P)</label>
+                                    <input type="number" id="fin-p" value="10000">
+                                </div>
+                                <div class="input-group">
+                                    <label>Annual Rate (r %)</label>
+                                    <input type="number" id="fin-r" value="5">
+                                </div>
+                            </div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Compounds / Year (n)</label>
+                                    <input type="number" id="fin-n" value="12">
+                                </div>
+                                <div class="input-group">
+                                    <label>Time (Years, t)</label>
+                                    <input type="number" id="fin-t" value="10">
+                                </div>
+                            </div>
+                            <button class="btn" onclick="calculateFinance()">Calculate Compound Interest</button>
+                            <div class="result-panel">
+                                <span class="result-label">Financial Growth</span>
+                                <div class="result-value" id="fin-res-amount">Final Amount: $--</div>
+                                <div class="result-unit" id="fin-res-interest">Interest Earned: $--</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('fin-res-amount').textContent)">Copy Amount</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateFinance(); }
+            },
+            {
+                id: "unitconvert",
+                name: "Unit Convert",
+                icon: "🔄",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Live Unit Converter</div>
+                            <div class="input-group">
+                                <label>Category</label>
+                                <select id="uc-cat" onchange="updateUnitConvertUI()">
+                                    <option value="length">Length</option>
+                                    <option value="mass">Mass</option>
+                                    <option value="temp">Temperature</option>
+                                    <option value="speed">Speed</option>
+                                </select>
+                            </div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>From Unit</label>
+                                    <select id="uc-from" onchange="calculateUnitConvert()"></select>
+                                </div>
+                                <div class="input-group">
+                                    <label>To Unit</label>
+                                    <select id="uc-to" onchange="calculateUnitConvert()"></select>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Value</label>
+                                <input type="number" id="uc-val" value="100" oninput="calculateUnitConvert()">
+                            </div>
+                            <div class="result-panel">
+                                <span class="result-label">Converted Result</span>
+                                <div class="result-value" id="uc-result">--</div>
+                                <div class="result-unit" id="uc-unit-label">--</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('uc-result').textContent)">Copy Result</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { updateUnitConvertUI(); }
+            },
+            {
+                id: "datetime",
+                name: "Date & Time",
+                icon: "📅",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Date & Time Duration Calculator</div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Start Date</label>
+                                    <input type="date" id="dt-start" value="2026-01-01">
+                                </div>
+                                <div class="input-group">
+                                    <label>End Date</label>
+                                    <input type="date" id="dt-end" value="2026-12-31">
+                                </div>
+                            </div>
+                            <button class="btn" onclick="calculateDateTime()">Calculate Duration</button>
+                            <div class="result-panel">
+                                <span class="result-label">Duration Breakdown</span>
+                                <div id="dt-results" style="font-size:14px; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                                    <div>Days: --</div><div>Weeks: --</div>
+                                    <div>Hours: --</div><div>Minutes: --</div>
+                                </div>
+                                <div class="result-actions" style="margin-top:12px;">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('dt-results').innerText)">Copy Duration</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateDateTime(); }
+            },
+            {
+                id: "matrix",
+                name: "Matrix",
+                icon: "🧮",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">2×2 Matrix Operations</div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Matrix A</label>
+                                    <div class="matrix-grid">
+                                        <input type="number" id="mx-a00" value="1">
+                                        <input type="number" id="mx-a01" value="2">
+                                        <input type="number" id="mx-a10" value="3">
+                                        <input type="number" id="mx-a11" value="4">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label>Matrix B</label>
+                                    <div class="matrix-grid">
+                                        <input type="number" id="mx-b00" value="2">
+                                        <input type="number" id="mx-b01" value="0">
+                                        <input type="number" id="mx-b10" value="1">
+                                        <input type="number" id="mx-b11" value="2">
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn" onclick="calculateMatrix()">Compute Matrices</button>
+                            <div class="result-panel">
+                                <span class="result-label">Matrix Results</span>
+                                <div id="matrix-results" style="font-size:13px; display:flex; flex-direction:column; gap:6px;">
+                                    <div>Det(A): --</div>
+                                    <div>A + B: --</div>
+                                    <div>A - B: --</div>
+                                    <div>A × B: --</div>
+                                </div>
+                                <div class="result-actions" style="margin-top:12px;">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard(document.getElementById('matrix-results').innerText)">Copy Matrix Data</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateMatrix(); }
+            },
+            {
+                id: "numberbase",
+                name: "Number Base",
+                icon: "🔢",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Number Base Converter</div>
+                            <div class="input-group">
+                                <label>Decimal</label>
+                                <input type="text" id="nb-dec" value="255" oninput="calculateNumberBase('dec')">
+                            </div>
+                            <div class="input-group">
+                                <label>Binary</label>
+                                <input type="text" id="nb-bin" value="11111111" oninput="calculateNumberBase('bin')">
+                            </div>
+                            <div class="input-group">
+                                <label>Hexadecimal</label>
+                                <input type="text" id="nb-hex" value="FF" oninput="calculateNumberBase('hex')">
+                            </div>
+                            <div class="input-group">
+                                <label>Octal</label>
+                                <input type="text" id="nb-oct" value="377" oninput="calculateNumberBase('oct')">
+                            </div>
+                            <div class="result-panel">
+                                <span class="result-label">Status</span>
+                                <div class="result-value" id="nb-status" style="font-size:16px;">All bases synchronized</div>
+                                <div class="result-actions">
+                                    <button class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:6px;" onclick="copyToClipboard('Dec: ' + document.getElementById('nb-dec').value + ', Hex: ' + document.getElementById('nb-hex').value)">Copy Values</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateNumberBase('dec'); }
+            },
+            {
+                id: "equation",
+                name: "Equation",
+                icon: "📉",
+                render() {
+                    return `
+                        <div class="card calc-workspace">
+                            <div class="card-title">Equation Solver & Table Generator</div>
+                            <div class="input-group">
+                                <label>Function f(x)</label>
+                                <input type="text" id="eq-f" value="x^3 - x - 2">
+                            </div>
+                            <div class="row-inputs">
+                                <div class="input-group">
+                                    <label>Start x (a)</label>
+                                    <input type="number" id="eq-start" value="1">
+                                </div>
+                                <div class="input-group">
+                                    <label>End x (b)</label>
+                                    <input type="number" id="eq-end" value="2">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Table Step</label>
+                                <input type="number" id="eq-step" value="0.2">
+                            </div>
+                            <button class="btn" onclick="calculateEquation()">Generate Table & Root (Bisection)</button>
+                            <div class="result-panel">
+                                <span class="result-label">Bisection Root Result</span>
+                                <div class="result-value" id="eq-root" style="font-size:20px;">Root x ≈ --</div>
+                                <span class="result-label" style="margin-top:8px;">Function Table</span>
+                                <div class="table-container" id="eq-table-container">
+                                    <table class="data-table">
+                                        <thead><tr><th>x</th><th>f(x)</th></tr></thead>
+                                        <tbody id="eq-tbody"><tr><td colspan="2">No data</td></tr></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                },
+                init() { calculateEquation(); }
+            }
+        );
+    </script>
+
+    <script>
+        // General Calculator Logic
+        function genAppend(val) {
+            const inp = document.getElementById('gen-expr');
+            if (!inp) return;
+            inp.value += val;
+            inp.focus();
+        }
+        function genClear() {
+            const inp = document.getElementById('gen-expr');
+            if (inp) inp.value = '';
+        }
+        function genBackspace() {
+            const inp = document.getElementById('gen-expr');
+            if (inp) inp.value = inp.value.slice(0, -1);
+        }
+        function genUsePrev() {
+            const inp = document.getElementById('gen-expr');
+            if (inp) inp.value += lastResult;
+        }
+        function calculateGeneral() {
+            const expr = document.getElementById('gen-expr').value;
+            const xVal = parseFloat(document.getElementById('gen-x').value) || 0;
+            const resEl = document.getElementById('gen-result');
+            const unitEl = document.getElementById('gen-unit');
+            try {
+                const res = SafeParser.parse(expr, { x: xVal });
+                if (isNaN(res) || !isFinite(res)) throw new Error("Invalid result");
+                lastResult = res;
+                resEl.textContent = res;
+                unitEl.textContent = "Evaluated successfully";
+                saveHistory(expr, res);
+            } catch (err) {
+                resEl.textContent = "Error";
+                unitEl.textContent = err.message;
+            }
+        }
+
+        // Calculus Logic
+        function calculateCalculus() {
+            const fStr = document.getElementById('calc-f').value;
+            const x = parseFloat(document.getElementById('calc-x').value) || 0;
+            const dx = parseFloat(document.getElementById('calc-dx').value) || 0.0001;
+            const n = parseInt(document.getElementById('calc-n').value) || 100;
+            const end = parseFloat(document.getElementById('calc-dx').value) || 5; // using dx input as end for integral if needed, or separate
+            
+            const derivEl = document.getElementById('calc-res-deriv');
+            const integEl = document.getElementById('calc-res-integ');
+
+            try {
+                // Derivative via Central Difference
+                const fPlus = SafeParser.parse(fStr, { x: x + dx });
+                const fMinus = SafeParser.parse(fStr, { x: x - dx });
+                const deriv = (fPlus - fMinus) / (2 * dx);
+
+                // Integral via Simpson's Rule on [x, end]
+                const a = x;
+                const b = end > x ? end : x + 5;
+                const intervals = n % 2 === 0 ? n : n + 1;
+                const h = (b - a) / intervals;
+                let sum = SafeParser.parse(fStr, { x: a }) + SafeParser.parse(fStr, { x: b });
+
+                for (let i = 1; i < intervals; i++) {
+                    const xi = a + i * h;
+                    const fi = SafeParser.parse(fStr, { x: xi });
+                    sum += fi * (i % 2 === 0 ? 2 : 4);
+                }
+                const integ = (h / 3) * sum;
+
+                derivEl.textContent = `f'(${x}) ≈ ${deriv.toFixed(6)}`;
+                integEl.textContent = `∫[${a}, ${b}] f(x)dx ≈ ${integ.toFixed(6)}`;
+                lastResult = deriv;
+                saveHistory(`d/dx(${fStr}) at x=${x}`, deriv);
+            } catch (err) {
+                derivEl.textContent = "Derivative Error";
+                integEl.textContent = err.message;
+            }
+        }
+
+        // Statistics Logic
+        function calculateStatistics() {
+            const raw = document.getElementById('stat-data').value;
+            const container = document.getElementById('stat-results');
+            try {
+                const arr = raw.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+                if (arr.length === 0) throw new Error("No valid numbers");
+                const n = arr.length;
+                const sum = arr.reduce((a, b) => a + b, 0);
+                const mean = sum / n;
+                const sorted = [...arr].sort((a, b) => a - b);
+                const median = n % 2 === 0 ? (sorted[n/2 - 1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
+                const min = sorted[0];
+                const max = sorted[n - 1];
+
+                const popVar = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+                const popStd = Math.sqrt(popVar);
+                const sampVar = n > 1 ? arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1) : 0;
+                const sampStd = Math.sqrt(sampVar);
+
+                container.innerHTML = `
+                    <div>n: ${n}</div><div>Sum: ${sum.toFixed(4)}</div>
+                    <div>Mean: ${mean.toFixed(4)}</div><div>Median: ${median.toFixed(4)}</div>
+                    <div>Min: ${min}</div><div>Max: ${max}</div>
+                    <div>Pop Std: ${popStd.toFixed(4)}</div><div>Samp Std: ${sampStd.toFixed(4)}</div>
+                `;
+                lastResult = mean;
+                saveHistory(`Stats (${n} items)`, mean);
+            } catch (err) {
+                container.innerHTML = `<div style="color:var(--danger)">Error: ${err.message}</div>`;
+            }
+        }
+
+        // Geometry Logic
+        function updateGeometryUI() {
+            const shape = document.getElementById('geo-shape').value;
+            const container = document.getElementById('geo-inputs-container');
+            if (shape === 'circle') {
+                container.innerHTML = `<div class="input-group"><label>Radius (r)</label><input type="number" id="geo-r" value="5"></div>`;
+            } else if (shape === 'rectangle') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Width (w)</label><input type="number" id="geo-w" value="4"></div><div class="input-group"><label>Height (h)</label><input type="number" id="geo-h" value="6"></div></div>`;
+            } else if (shape === 'triangle') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Base (b)</label><input type="number" id="geo-b" value="5"></div><div class="input-group"><label>Height (h)</label><input type="number" id="geo-th" value="8"></div></div>`;
+            } else if (shape === 'cube') {
+                container.innerHTML = `<div class="input-group"><label>Side (a)</label><input type="number" id="geo-side" value="3"></div>`;
+            } else if (shape === 'cylinder') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Radius (r)</label><input type="number" id="geo-cr" value="3"></div><div class="input-group"><label>Height (h)</label><input type="number" id="geo-ch" value="7"></div></div>`;
+            } else if (shape === 'sphere') {
+                container.innerHTML = `<div class="input-group"><label>Radius (r)</label><input type="number" id="geo-sr" value="4"></div>`;
+            }
+        }
+
+        function calculateGeometry() {
+            const shape = document.getElementById('geo-shape').value;
+            const r1 = document.getElementById('geo-res-1');
+            const r2 = document.getElementById('geo-res-2');
+            try {
+                if (shape === 'circle') {
+                    const r = parseFloat(document.getElementById('geo-r').value);
+                    if (r <= 0) throw new Error("Radius must be > 0");
+                    const area = Math.PI * r * r;
+                    const circ = 2 * Math.PI * r;
+                    r1.textContent = `Area: ${area.toFixed(4)}`;
+                    r2.textContent = `Circumference: ${circ.toFixed(4)}`;
+                    lastResult = area;
+                } else if (shape === 'rectangle') {
+                    const w = parseFloat(document.getElementById('geo-w').value);
+                    const h = parseFloat(document.getElementById('geo-h').value);
+                    if (w <= 0 || h <= 0) throw new Error("Dimensions must be > 0");
+                    const area = w * h;
+                    const perim = 2 * (w + h);
+                    r1.textContent = `Area: ${area.toFixed(4)}`;
+                    r2.textContent = `Perimeter: ${perim.toFixed(4)}`;
+                    lastResult = area;
+                } else if (shape === 'triangle') {
+                    const b = parseFloat(document.getElementById('geo-b').value);
+                    const h = parseFloat(document.getElementById('geo-th').value);
+                    if (b <= 0 || h <= 0) throw new Error("Dimensions must be > 0");
+                    const area = 0.5 * b * h;
+                    r1.textContent = `Area: ${area.toFixed(4)}`;
+                    r2.textContent = `Base: ${b}, Height: ${h}`;
+                    lastResult = area;
+                } else if (shape === 'cube') {
+                    const a = parseFloat(document.getElementById('geo-side').value);
+                    if (a <= 0) throw new Error("Side must be > 0");
+                    const sa = 6 * a * a;
+                    const vol = a * a * a;
+                    r1.textContent = `Surface Area: ${sa.toFixed(4)}`;
+                    r2.textContent = `Volume: ${vol.toFixed(4)}`;
+                    lastResult = vol;
+                } else if (shape === 'cylinder') {
+                    const r = parseFloat(document.getElementById('geo-cr').value);
+                    const h = parseFloat(document.getElementById('geo-ch').value);
+                    if (r <= 0 || h <= 0) throw new Error("Dimensions must be > 0");
+                    const sa = 2 * Math.PI * r * h + 2 * Math.PI * r * r;
+                    const vol = Math.PI * r * r * h;
+                    r1.textContent = `Surface Area: ${sa.toFixed(4)}`;
+                    r2.textContent = `Volume: ${vol.toFixed(4)}`;
+                    lastResult = vol;
+                } else if (shape === 'sphere') {
+                    const r = parseFloat(document.getElementById('geo-sr').value);
+                    if (r <= 0) throw new Error("Radius must be > 0");
+                    const sa = 4 * Math.PI * r * r;
+                    const vol = (4 / 3) * Math.PI * Math.pow(r, 3);
+                    r1.textContent = `Surface Area: ${sa.toFixed(4)}`;
+                    r2.textContent = `Volume: ${vol.toFixed(4)}`;
+                    lastResult = vol;
+                }
+                saveHistory(`Geometry (${shape})`, lastResult);
+            } catch (err) {
+                r1.textContent = "Error";
+                r2.textContent = err.message;
+            }
+        }
+
+        // Trigonometry Logic
+        function calculateTrigonometry() {
+            const val = parseFloat(document.getElementById('trig-val').value) || 0;
+            const mode = document.getElementById('trig-mode').value;
+            const invVal = parseFloat(document.getElementById('trig-inv-val').value) || 0;
+            const container = document.getElementById('trig-results');
+
+            const rad = mode === 'deg' ? val * (Math.PI / 180) : val;
+            try {
+                const s = Math.sin(rad);
+                const c = Math.cos(rad);
+                const t = Math.tan(rad);
+                const asin = Math.asin(Math.max(-1, Math.min(1, invVal)));
+                const acos = Math.acos(Math.max(-1, Math.min(1, invVal)));
+                const atan = Math.atan(invVal);
+
+                container.innerHTML = `
+                    <div>sin(${val}°): ${s.toFixed(4)}</div><div>cos(${val}°): ${c.toFixed(4)}</div>
+                    <div>tan(${val}°): ${isFinite(t) ? t.toFixed(4) : 'Undefined'}</div><div>asin(${invVal}): ${asin.toFixed(4)} rad</div>
+                    <div>acos(${invVal}): ${acos.toFixed(4)} rad</div><div>atan(${invVal}): ${atan.toFixed(4)} rad</div>
+                `;
+                lastResult = s;
+                saveHistory(`Trig (${val} ${mode})`, s);
+            } catch (err) {
+                container.innerHTML = `<div style="color:var(--danger)">Error: ${err.message}</div>`;
+            }
+        }
+
+        // Physics Logic
+        function updatePhysicsUI() {
+            const tool = document.getElementById('phys-tool').value;
+            const container = document.getElementById('phys-inputs-container');
+            if (tool === 'kinematics_v') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Distance (s, m)</label><input type="number" id="p-s" value="100"></div><div class="input-group"><label>Time (t, s)</label><input type="number" id="p-t" value="9.58"></div></div>`;
+            } else if (tool === 'kinematics_s') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Velocity (v, m/s)</label><input type="number" id="p-v" value="25"></div><div class="input-group"><label>Time (t, s)</label><input type="number" id="p-t" value="10"></div></div>`;
+            } else if (tool === 'newton') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Mass (m, kg)</label><input type="number" id="p-m" value="1200"></div><div class="input-group"><label>Accel (a, m/s²)</label><input type="number" id="p-a" value="3.5"></div></div>`;
+            } else if (tool === 'ke') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Mass (m, kg)</label><input type="number" id="p-m" value="80"></div><div class="input-group"><label>Velocity (v, m/s)</label><input type="number" id="p-v" value="12"></div></div>`;
+            } else if (tool === 'pe') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Mass (m, kg)</label><input type="number" id="p-m" value="10"></div><div class="input-group"><label>Height (h, m)</label><input type="number" id="p-h" value="15"></div></div>`;
+            } else if (tool === 'ohm') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Current (I, A)</label><input type="number" id="p-i" value="2.5"></div><div class="input-group"><label>Resistance (R, Ω)</label><input type="number" id="p-r" value="48"></div></div>`;
+            }
+        }
+
+        function calculatePhysics() {
+            const tool = document.getElementById('phys-tool').value;
+            const resEl = document.getElementById('phys-res');
+            const unitEl = document.getElementById('phys-unit');
+            try {
+                let res = 0;
+                let unit = "";
+                if (tool === 'kinematics_v') {
+                    const s = parseFloat(document.getElementById('p-s').value);
+                    const t = parseFloat(document.getElementById('p-t').value);
+                    if (t === 0) throw new Error("Division by zero");
+                    res = s / t; unit = "m/s";
+                } else if (tool === 'kinematics_s') {
+                    const v = parseFloat(document.getElementById('p-v').value);
+                    const t = parseFloat(document.getElementById('p-t').value);
+                    res = v * t; unit = "m";
+                } else if (tool === 'newton') {
+                    const m = parseFloat(document.getElementById('p-m').value);
+                    const a = parseFloat(document.getElementById('p-a').value);
+                    res = m * a; unit = "N";
+                } else if (tool === 'ke') {
+                    const m = parseFloat(document.getElementById('p-m').value);
+                    const v = parseFloat(document.getElementById('p-v').value);
+                    res = 0.5 * m * v * v; unit = "J";
+                } else if (tool === 'pe') {
+                    const m = parseFloat(document.getElementById('p-m').value);
+                    const h = parseFloat(document.getElementById('p-h').value);
+                    res = m * 9.80665 * h; unit = "J";
+                } else if (tool === 'ohm') {
+                    const i = parseFloat(document.getElementById('p-i').value);
+                    const r = parseFloat(document.getElementById('p-r').value);
+                    res = i * r; unit = "V";
+                }
+                lastResult = res;
+                resEl.textContent = res.toFixed(4);
+                unitEl.textContent = unit;
+                saveHistory(`Physics (${tool})`, `${res.toFixed(4)} ${unit}`);
+            } catch (err) {
+                resEl.textContent = "Error";
+                unitEl.textContent = err.message;
+            }
+        }
+
+        // Materials Logic
+        function calculateMaterials() {
+            const f = parseFloat(document.getElementById('mat-f').value) * parseFloat(document.getElementById('mat-f-unit').value);
+            const a = parseFloat(document.getElementById('mat-a').value) * parseFloat(document.getElementById('mat-a-unit').value);
+            const dl = parseFloat(document.getElementById('mat-dl').value);
+            const l0 = parseFloat(document.getElementById('mat-l0').value);
+
+            const sEl = document.getElementById('mat-res-stress');
+            const strainEl = document.getElementById('mat-res-strain');
+            const modEl = document.getElementById('mat-res-mod');
+
+            try {
+                if (a === 0 || l0 === 0) throw new Error("Invalid geometry");
+                const stress = f / a; // Pascals
+                const strain = dl / l0;
+                if (strain === 0) throw new Error("Strain cannot be zero");
+                const modulus = stress / strain;
+
+                function formatPascal(val) {
+                    if (val >= 1e9) return (val / 1e9).toFixed(3) + ' GPa';
+                    if (val >= 1e6) return (val / 1e6).toFixed(3) + ' MPa';
+                    if (val >= 1e3) return (val / 1e3).toFixed(3) + ' kPa';
+                    return val.toFixed(2) + ' Pa';
+                }
+
+                sEl.textContent = `Stress: ${formatPascal(stress)}`;
+                strainEl.textContent = `Strain: ${strain.toExponential(4)}`;
+                modEl.textContent = `Young's Modulus (E): ${formatPascal(modulus)}`;
+                lastResult = stress;
+                saveHistory(`Materials Stress`, formatPascal(stress));
+            } catch (err) {
+                sEl.textContent = "Error";
+                strainEl.textContent = err.message;
+                modEl.textContent = "";
+            }
+        }
+
+        // Pendulum Logic
+        function updatePendulumUI() {
+            const mode = document.getElementById('pend-mode').value;
+            const container = document.getElementById('pend-inputs-container');
+            if (mode === 'T') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Length (L, m)</label><input type="number" id="pend-l" value="1.0"></div><div class="input-group"><label>Gravity (g, m/s²)</label><input type="number" id="pend-g" value="9.80665"></div></div>`;
+            } else if (mode === 'L') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Period (T, s)</label><input type="number" id="pend-t" value="2.006"></div><div class="input-group"><label>Gravity (g, m/s²)</label><input type="number" id="pend-g" value="9.80665"></div></div>`;
+            } else if (mode === 'g') {
+                container.innerHTML = `<div class="row-inputs"><div class="input-group"><label>Period (T, s)</label><input type="number" id="pend-t" value="2.006"></div><div class="input-group"><label>Length (L, m)</label><input type="number" id="pend-l" value="1.0"></div></div>`;
+            }
+        }
+
+        function calculatePendulum() {
+            const mode = document.getElementById('pend-mode').value;
+            const r1 = document.getElementById('pend-res-primary');
+            const r2 = document.getElementById('pend-res-secondary');
+            try {
+                let T = 0, L = 0, g = 9.80665;
+                if (mode === 'T') {
+                    L = parseFloat(document.getElementById('pend-l').value);
+                    g = parseFloat(document.getElementById('pend-g').value);
+                    if (L <= 0 || g <= 0) throw new Error("Values must be > 0");
+                    T = 2 * Math.PI * Math.sqrt(L / g);
+                    r1.textContent = `Period (T): ${T.toFixed(4)} s`;
+                } else if (mode === 'L') {
+                    T = parseFloat(document.getElementById('pend-t').value);
+                    g = parseFloat(document.getElementById('pend-g').value);
+                    if (T <= 0 || g <= 0) throw new Error("Values must be > 0");
+                    L = g * Math.pow(T / (2 * Math.PI), 2);
+                    r1.textContent = `Length (L): ${L.toFixed(4)} m`;
+                } else if (mode === 'g') {
+                    T = parseFloat(document.getElementById('pend-t').value);
+                    L = parseFloat(document.getElementById('pend-l').value);
+                    if (T <= 0 || L <= 0) throw new Error("Values must be > 0");
+                    g = L * Math.pow(2 * Math.PI / T, 2);
+                    r1.textContent = `Gravity (g): ${g.toFixed(4)} m/s²`;
+                }
+                const freq = 1 / T;
+                const rpm = (60 / T);
+                r2.textContent = `Frequency: ${freq.toFixed(4)} Hz | RPM: ${rpm.toFixed(2)}`;
+                lastResult = T;
+                saveHistory(`Pendulum (${mode})`, `${T.toFixed(4)} s`);
+            } catch (err) {
+                r1.textContent = "Error";
+                r2.textContent = err.message;
+            }
+        }
+
+        // Finance Logic
+        function calculateFinance() {
+            const p = parseFloat(document.getElementById('fin-p').value);
+            const r = parseFloat(document.getElementById('fin-r').value) / 100;
+            const n = parseFloat(document.getElementById('fin-n').value);
+            const t = parseFloat(document.getElementById('fin-t').value);
+
+            const amtEl = document.getElementById('fin-res-amount');
+            const intEl = document.getElementById('fin-res-interest');
+            try {
+                if (p < 0 || r < 0 || n <= 0 || t < 0) throw new Error("Invalid financial parameters");
+                const a = p * Math.pow(1 + r / n, n * t);
+                const interest = a - p;
+                amtEl.textContent = `Final Amount: $${a.toFixed(2)}`;
+                intEl.textContent = `Interest Earned: $${interest.toFixed(2)}`;
+                lastResult = a;
+                saveHistory(`Compound Interest`, `$${a.toFixed(2)}`);
+            } catch (err) {
+                amtEl.textContent = "Error";
+                intEl.textContent = err.message;
+            }
+        }
+
+        // Unit Converter Logic
+        const unitUnits = {
+            length: { m: 1, cm: 0.01, mm: 0.001, km: 1000, inch: 0.0254, ft: 0.3048 },
+            mass: { kg: 1, g: 0.001, mg: 0.000001, lb: 0.453592 },
+            temp: { Celsius: 'C', Fahrenheit: 'F', Kelvin: 'K' },
+            speed: { 'm/s': 1, 'km/h': 0.277778, mph: 0.44704 }
+        };
+
+        function updateUnitConvertUI() {
+            const cat = document.getElementById('uc-cat').value;
+            const fromSel = document.getElementById('uc-from');
+            const toSel = document.getElementById('uc-to');
+            const keys = Object.keys(unitUnits[cat]);
+            fromSel.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
+            toSel.innerHTML = keys.map((k, i) => `<option value="${k}" ${i===1?'selected':''}>${k}</option>`).join('');
+            calculateUnitConvert();
+        }
+
+        function calculateUnitConvert() {
+            const cat = document.getElementById('uc-cat').value;
+            const from = document.getElementById('uc-from').value;
+            const to = document.getElementById('uc-to').value;
+            const val = parseFloat(document.getElementById('uc-val').value) || 0;
+            const resEl = document.getElementById('uc-result');
+            const unitEl = document.getElementById('uc-unit-label');
+
+            try {
+                let res = 0;
+                if (cat === 'temp') {
+                    let celsius = val;
+                    if (from === 'F') celsius = (val - 32) * 5/9;
+                    if (from === 'K') celsius = val - 273.15;
+                    
+                    if (to === 'C') res = celsius;
+                    else if (to === 'F') res = celsius * 9/5 + 32;
+                    else if (to === 'K') res = celsius + 273.15;
+                } else {
+                    const baseVal = val * unitUnits[cat][from];
+                    res = baseVal / unitUnits[cat][to];
+                }
+                lastResult = res;
+                resEl.textContent = res.toFixed(6);
+                unitEl.textContent = `${val} ${from} = ${res.toFixed(6)} ${to}`;
+                saveHistory(`Convert ${val} ${from} to ${to}`, res.toFixed(4));
+            } catch (err) {
+                resEl.textContent = "Error";
+                unitEl.textContent = err.message;
+            }
+        }
+
+        // Date & Time Logic
+        function calculateDateTime() {
+            const start = new Date(document.getElementById('dt-start').value);
+            const end = new Date(document.getElementById('dt-end').value);
+            const container = document.getElementById('dt-results');
+            try {
+                if (isNaN(start) || isNaN(end)) throw new Error("Invalid dates");
+                const diffMs = end - start;
+                const diffSec = diffMs / 1000;
+                const diffMin = diffSec / 60;
+                const diffHours = diffMin / 60;
+                const diffDays = diffHours / 24;
+                const diffWeeks = diffDays / 7;
+
+                container.innerHTML = `
+                    <div>Days: ${Math.round(diffDays)}</div><div>Weeks: ${diffWeeks.toFixed(2)}</div>
+                    <div>Hours: ${Math.round(diffHours)}</div><div>Minutes: ${Math.round(diffMin)}</div>
+                `;
+                lastResult = diffDays;
+                saveHistory(`Date Duration`, `${Math.round(diffDays)} days`);
+            } catch (err) {
+                container.innerHTML = `<div style="color:var(--danger)">Error: ${err.message}</div>`;
+            }
+        }
+
+        // Matrix Logic
+        function calculateMatrix() {
+            const a00 = parseFloat(document.getElementById('mx-a00').value) || 0;
+            const a01 = parseFloat(document.getElementById('mx-a01').value) || 0;
+            const a10 = parseFloat(document.getElementById('mx-a10').value) || 0;
+            const a11 = parseFloat(document.getElementById('mx-a11').value) || 0;
+
+            const b00 = parseFloat(document.getElementById('mx-b00').value) || 0;
+            const b01 = parseFloat(document.getElementById('mx-b01').value) || 0;
+            const b10 = parseFloat(document.getElementById('mx-b10').value) || 0;
+            const b11 = parseFloat(document.getElementById('mx-b11').value) || 0;
+
+            const container = document.getElementById('matrix-results');
+            try {
+                const detA = a00 * a11 - a01 * a10;
+                const add00 = a00 + b00, add01 = a01 + b01, add10 = a10 + b10, add11 = a11 + b11;
+                const sub00 = a00 - b00, sub01 = a01 - b01, sub10 = a10 - b10, sub11 = a11 - b11;
+                const mul00 = a00 * b00 + a01 * b10, mul01 = a00 * b01 + a01 * b11;
+                const mul10 = a10 * b00 + a11 * b10, mul11 = a10 * b01 + a11 * b11;
+
+                container.innerHTML = `
+                    <div>Det(A): ${detA.toFixed(4)}</div>
+                    <div>A + B: [${add00}, ${add01}] / [${add10}, ${add11}]</div>
+                    <div>A - B: [${sub00}, ${sub01}] / [${sub10}, ${sub11}]</div>
+                    <div>A × B: [${mul00}, ${mul01}] / [${mul10}, ${mul11}]</div>
+                `;
+                lastResult = detA;
+                saveHistory(`Matrix Determinant A`, detA);
+            } catch (err) {
+                container.innerHTML = `<div style="color:var(--danger)">Error: ${err.message}</div>`;
+            }
+        }
+
+        // Number Base Logic
+        function calculateNumberBase(source) {
+            const decInp = document.getElementById('nb-dec');
+            const binInp = document.getElementById('nb-bin');
+            const hexInp = document.getElementById('nb-hex');
+            const octInp = document.getElementById('nb-oct');
+            const statusEl = document.getElementById('nb-status');
+
+            try {
+                let decVal = 0;
+                if (source === 'dec') {
+                    decVal = parseInt(decInp.value, 10);
+                } else if (source === 'bin') {
+                    decVal = parseInt(binInp.value, 2);
+                } else if (source === 'hex') {
+                    decVal = parseInt(hexInp.value, 16);
+                } else if (source === 'oct') {
+                    decVal = parseInt(octInp.value, 8);
+                }
+
+                if (isNaN(decVal)) throw new Error("Invalid number for base");
+
+                if (source !== 'dec') decInp.value = decVal.toString(10);
+                if (source !== 'bin') binInp.value = decVal.toString(2);
+                if (source !== 'hex') hexInp.value = decVal.toString(16).toUpperCase();
+                if (source !== 'oct') octInp.value = decVal.toString(8);
+
+                statusEl.textContent = `Decimal: ${decVal}`;
+                lastResult = decVal;
+            } catch (err) {
+                statusEl.textContent = "Invalid Base Input";
+            }
+        }
+
+        // Equation & Bisection Solver Logic
+        function calculateEquation() {
+            const fStr = document.getElementById('eq-f').value;
+            const start = parseFloat(document.getElementById('eq-start').value);
+            const end = parseFloat(document.getElementById('eq-end').value);
+            const step = parseFloat(document.getElementById('eq-step').value);
+            const rootEl = document.getElementById('eq-root');
+            const tbody = document.getElementById('eq-tbody');
+
+            try {
+                // Table Generation
+                let html = '';
+                for (let x = start; x <= end + 1e-9; x += step) {
+                    const fx = SafeParser.parse(fStr, { x: parseFloat(x.toFixed(4)) });
+                    html += `<tr><td>${x.toFixed(2)}</td><td>${fx.toFixed(4)}</td></tr>`;
+                }
+                tbody.innerHTML = html;
+
+                // Bisection Root Finding
+                let a = start, b = end;
+                let fa = SafeParser.parse(fStr, { x: a });
+                let fb = SafeParser.parse(fStr, { x: b });
+
+                if (fa * fb > 0) {
+                    rootEl.textContent = "No sign change in interval [a, b]";
+                    return;
+                }
+
+                let c = a;
+                for (let i = 0; i < 100; i++) {
+                    c = (a + b) / 2;
+                    let fc = SafeParser.parse(fStr, { x: c });
+                    if (Math.abs(fc) < 1e-7 || (b - a) / 2 < 1e-7) break;
+                    if (fa * fc < 0) {
+                        b = c; fb = fc;
+                    } else {
+                        a = c; fa = fc;
+                    }
+                }
+                rootEl.textContent = `Root x ≈ ${c.toFixed(6)}`;
+                lastResult = c;
+                saveHistory(`Equation Root (${fStr})`, c.toFixed(4));
+            } catch (err) {
+                rootEl.textContent = err.message;
+                tbody.innerHTML = `<tr><td colspan="2">Error in evaluation</td></tr>`;
+            }
+        }
+    </script>
+
+    <script>
+        // Core Navigation & Rendering Engine
+        function renderCategoryBar() {
+            const bar = document.getElementById('category-bar');
+            bar.innerHTML = calculators.map((c, i) => `
+                <button class="cat-btn ${i === currentCategoryIndex ? 'active' : ''}" onclick="switchCategory(${i})">
+                    <span>${c.icon}</span> ${c.name}
+                </button>
+            `).join('');
+
+            const dots = document.getElementById('dots-container');
+            dots.innerHTML = calculators.map((_, i) => `
+                <div class="dot ${i === currentCategoryIndex ? 'active' : ''}" onclick="switchCategory(${i})"></div>
+            `).join('');
+        }
+
+        function renderActiveCalculator() {
+            const main = document.getElementById('app-main');
+            const calc = calculators[currentCategoryIndex];
+            
+            // In desktop two-column view, include the history panel on the right
+            main.innerHTML = `
+                <div class="calc-pane">
+                    ${calc.render()}
+                </div>
+                <div class="card history-pane">
+                    <div class="card-title">
+                        Calculation History
+                        <button class="btn-secondary" style="padding:4px 10px; font-size:12px; border-radius:6px;" onclick="clearHistory()">Clear</button>
+                    </div>
+                    <div class="history-list" id="history-list-container">
+                        ${renderHistoryList()}
+                    </div>
+                </div>
+            `;
+            calc.init();
+            renderCategoryBar();
+        }
+
+        function renderHistoryList() {
+            if (historyData.length === 0) return `<div style="color:var(--text-secondary); text-align:center; padding:20px;">No calculations yet</div>`;
+            return historyData.map((item, idx) => `
+                <div class="history-item">
+                    <div class="history-content">
+                        <span class="history-expr">${item.expr}</span>
+                        <span class="history-res">${item.res}</span>
+                        <span class="history-time">${item.time}</span>
+                    </div>
+                    <button class="btn-secondary" style="padding:6px 10px; font-size:12px; border-radius:6px;" onclick="copyToClipboard('${item.res}')">Copy</button>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            historyData = [];
+            try { localStorage.removeItem('univ_calc_history'); } catch (e) {}
+            renderActiveCalculator();
+            showToast("History cleared");
+        }
+
+        function switchCategory(index) {
+            if (index < 0 || index >= calculators.length) return;
+            currentCategoryIndex = index;
+            renderActiveCalculator();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.getElementById('prev-cat-btn').addEventListener('click', () => {
+            let nextIdx = currentCategoryIndex - 1;
+            if (nextIdx < 0) nextIdx = calculators.length - 1;
+            switchCategory(nextIdx);
+        });
+
+        document.getElementById('next-cat-btn').addEventListener('click', () => {
+            let nextIdx = currentCategoryIndex + 1;
+            if (nextIdx >= calculators.length) nextIdx = 0;
+            switchCategory(nextIdx);
+        });
+
+        // Touch Swipe Handling
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.closest('input, textarea, select, button')) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            if (e.target.closest('input, textarea, select, button')) return;
+            if (!touchStartX || !touchStartY) return;
+            
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+
+            if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+                if (dx > 0) {
+                    // Swipe right -> previous category
+                    let nextIdx = currentCategoryIndex - 1;
+                    if (nextIdx < 0) nextIdx = calculators.length - 1;
+                    switchCategory(nextIdx);
+                } else {
+                    // Swipe left -> next category
+                    let nextIdx = currentCategoryIndex + 1;
+                    if (nextIdx >= calculators.length) nextIdx = 0;
+                    switchCategory(nextIdx);
+                }
+            }
+            touchStartX = 0;
+            touchStartY = 0;
+        }, { passive: true });
+
+        // Settings Modal event
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            showToast("Universal Calculator v2.6 • 100% Offline Ready");
+        });
+
+        // Initial Launch
+        window.onload = function() {
+            renderActiveCalculator();
+        };
+    </script>
+</body>
+</html>
